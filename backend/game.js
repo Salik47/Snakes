@@ -64,24 +64,48 @@ function gameLoop(state) {
   playerTwo.position.x += playerTwo.velocity.x;
   playerTwo.position.y += playerTwo.velocity.y;
 
+  // // Checking if the player one is out of the grid
+  // if (
+  //   playerOne.position.x < 0 ||
+  //   playerOne.position.x > GRID_SIZE ||
+  //   playerOne.position.y < 0 ||
+  //   playerOne.position.y > GRID_SIZE
+  // ) {
+  //   return 2;
+  // }
+
+  // // Checking if the player two is out of the grid
+  // if (
+  //   playerTwo.position.x < 0 ||
+  //   playerTwo.position.x > GRID_SIZE ||
+  //   playerTwo.position.y < 0 ||
+  //   playerTwo.position.y > GRID_SIZE
+  // ) {
+  //   return 1;
+  // }
+
   // Checking if the player one is out of the grid
-  if (
-    playerOne.position.x < 0 ||
-    playerOne.position.x > GRID_SIZE ||
-    playerOne.position.y < 0 ||
-    playerOne.position.y > GRID_SIZE
-  ) {
-    return 2;
+  if (playerOne.position.x < 0) {
+    playerOne.position.x = GRID_SIZE;
+  } else if (playerOne.position.x > GRID_SIZE) {
+    playerOne.position.x = 0;
+  }
+  if (playerOne.position.y < 0) {
+    playerOne.position.y = GRID_SIZE;
+  } else if (playerOne.position.y > GRID_SIZE) {
+    playerOne.position.y = 0;
   }
 
   // Checking if the player two is out of the grid
-  if (
-    playerTwo.position.x < 0 ||
-    playerTwo.position.x > GRID_SIZE ||
-    playerTwo.position.y < 0 ||
-    playerTwo.position.y > GRID_SIZE
-  ) {
-    return 1;
+  if (playerTwo.position.x < 0) {
+    playerTwo.position.x = GRID_SIZE;
+  } else if (playerTwo.position.x > GRID_SIZE) {
+    playerTwo.position.x = 0;
+  }
+  if (playerTwo.position.y < 0) {
+    playerTwo.position.y = GRID_SIZE;
+  } else if (playerTwo.position.y > GRID_SIZE) {
+    playerTwo.position.y = 0;
   }
 
   // Checking if the player one is eating the food and updating the position of the player one and generating the food randomly
