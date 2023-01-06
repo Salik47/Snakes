@@ -1,24 +1,34 @@
-const socket = require("socket.io")();
+const express = require("express");
+const app = express();
+const server = require("http").Server(app);
+const io = require("socket.io")(server);
+const { v4: uuidv4 } = require("uuid");
+const ngrok = require("ngrok");
+require("dotenv").config(); // Create a .env file in the root directory and add the PORT and NGROK_KEY variables in it
+
+const PORT = process.env.PORT || 3000;
+
 const { initializeGame, gameLoop, getUpdatedVelocity } = require("./game");
 const { FRAME_RATE } = require("./constants");
+
+// let makeid = (length) => {
+//   var result = "";
+//   var characters =
+//     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+//   var charactersLength = characters.length;
+//   for (var i = 0; i < length; i++) {
+//     result += characters.charAt(Math.floor(Math.random() * charactersLength));
+//   }
+//   return result;
+// };
 
 const globalState = {};
 const clientRooms = {};
 
-let generateRoomCode = (length) => {
-  var result = "";
-  var characters =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  var charactersLength = characters.length;
-  for (var i = 0; i < length; i++) {
-    result += characters.charAt(Math.floor(Math.random() * charactersLength));
-  }
-  return result;
-};
-
-let startGameInterval = (roomName) => {
+// Function to check if game is running or not
+function startGameInterval(roomName) {
   const intervalId = setInterval(() => {
-    const winner = gameLoop(globalState[roomName]);
+    const winner = gameLoop(globalState[roomName]); //
 
     if (!winner) {
       emitGameState(roomName, globalState[roomName]);
@@ -28,82 +38,98 @@ let startGameInterval = (roomName) => {
       clearInterval(intervalId);
     }
   }, 1000 / FRAME_RATE);
-};
+}
 
-let emitGameState = (room, gameState) => {
+function emitGameState(room, gameState) {
   // Send this event to everyone in the room.
-  socket.sockets.in(room).emit("gameState", JSON.stringify(gameState));
-};
+  io.sockets.in(room).emit("gameState", JSON.stringify(gameState));
+}
 
-let emitGameOver = (room, winner) => {
-  socket.sockets.in(room).emit("gameOver", JSON.stringify({ winner }));
-};
+function emitGameOver(room, winner) {
+  io.sockets.in(room).emit("gameOver", JSON.stringify({ winner }));
+}
 
-socket.on("connection", (client) => {
-  let handleJoinGame = (roomName) => {
-    const room = socket.sockets.adapter.rooms[roomName];
+io.on("connection", (client) => {
+  client.on("keydown", handleKeydown);
+  client.on("newGame", handleNewGame);
+  client.on("joinGame", handleJoinGame);
+
+  // Fire this function whenever a user tries to enter an existing room
+  function handleJoinGame(roomName) {
+    const room = io.sockets.adapter.rooms[roomName]; // Get the room with the given code from the lookup table of all rooms
 
     let allUsers;
     if (room) {
-      allUsers = room.sockets;
+      allUsers = room.sockets; // Get all the number of connected users in the room
     }
 
-    let numClients = 0;
+    let numberOfPlayers = 0;
     if (allUsers) {
-      numClients = Object.keys(allUsers).length;
+      numberOfPlayers = Object.keys(allUsers).length; // Get the number of users in the room
     }
 
-    if (numClients === 0) {
-      client.emit("unknownCode");
+    if (numberOfPlayers === 0) {
+      client.emit("unknownCode"); // If the room is not found then emit the unknownCode event
       return;
-    } else if (numClients > 1) {
-      client.emit("tooManyPlayers");
+    } else if (numberOfPlayers > 1) {
+      client.emit("tooManyPlayers"); // If the room is full, i.e, has more than one player present then emit the tooManyPlayers event
       return;
     }
 
+    // If the room is found and has only one player then joining the room
     clientRooms[client.id] = roomName;
-
     client.join(roomName);
-    client.number = 2;
-    client.emit("init", 2);
 
-    startGameInterval(roomName);
-  };
+    client.number = 2; // Setting the number of the player to 2
+    client.emit("init", 2); // Emitting the init event to the player with the number 2
 
-  let handleNewGame = () => {
-    let roomName = generateRoomCode(5);
-    clientRooms[client.id] = roomName;
-    client.emit("gameCode", roomName);
+    startGameInterval(roomName); // Initializing the game interval for the room
+  }
 
-    globalState[roomName] = initializeGame();
+  // Fire this function whenever a user tries to create a new room
+  function handleNewGame() {
+    let roomName = uuidv4(); // Generating a random 5 character code
+    clientRooms[client.id] = roomName; // Storing the room name in the lookup table of all rooms
+    client.emit("gameCode", roomName); // Emitting the gameCode event to the player with the room name
 
-    client.join(roomName);
-    client.number = 1;
-    client.emit("init", 1);
-  };
+    globalState[roomName] = initializeGame(); // Initializing the game state for the room and storing it in the globalState object
 
-  let handleKeydown = (keyCode) => {
-    const roomName = clientRooms[client.id];
+    client.join(roomName); // Joining the room
+    client.number = 1; // Setting the number of the player to 1
+    client.emit("init", 1); // Emitting the init event to the player with the number 1
+  }
+
+  // Fire this function whenever a user presses a key
+  function handleKeydown(keyCode) {
+    const roomName = clientRooms[client.id]; // Getting the room name from the lookup table of all rooms
+    // If the room name is not found then return
     if (!roomName) {
       return;
     }
     try {
-      keyCode = parseInt(keyCode);
+      keyCode = parseInt(keyCode); // Converting the keyCode to an integer
     } catch (e) {
       console.error(e);
       return;
     }
 
-    const velocity = getUpdatedVelocity(keyCode);
+    const velocity = getUpdatedVelocity(keyCode); // Getting the velocity of the snake based on the key pressed
 
     if (velocity) {
-      globalState[roomName].players[client.number - 1].velocity = velocity;
+      globalState[roomName].players[client.number - 1].velocity = velocity; // Updating the velocity (position) of the snake
     }
-  };
-
-  client.on("keydown", handleKeydown);
-  client.on("newGame", handleNewGame);
-  client.on("joinGame", handleJoinGame);
+  }
 });
 
-socket.listen(process.env.PORT || 3000);
+server.listen(PORT || 3000, () => {
+  console.log(`Listening on port ${server.address().port}`);
+
+  // (async function () {
+  //   const url = await ngrok.connect({
+  //     proto: "http", // http|tcp|tls
+  //     addr: PORT,
+  //     authtoken: process.env.NGROK_TOKEN,
+  //   });
+  //   console.log(url);
+  // })();
+});
