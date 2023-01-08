@@ -3,24 +3,12 @@ const app = express();
 const server = require("http").Server(app);
 const io = require("socket.io")(server);
 const { v4: uuidv4 } = require("uuid");
-const ngrok = require("ngrok");
 require("dotenv").config(); // Create a .env file in the root directory and add the PORT and NGROK_KEY variables in it
 
 const PORT = process.env.PORT || 3000;
 
 const { initializeGame, gameLoop, getUpdatedVelocity } = require("./game");
 const { FRAME_RATE } = require("./constants");
-
-// let makeid = (length) => {
-//   var result = "";
-//   var characters =
-//     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-//   var charactersLength = characters.length;
-//   for (var i = 0; i < length; i++) {
-//     result += characters.charAt(Math.floor(Math.random() * charactersLength));
-//   }
-//   return result;
-// };
 
 const globalState = {};
 const clientRooms = {};
@@ -123,13 +111,4 @@ io.on("connection", (client) => {
 
 server.listen(PORT || 3000, () => {
   console.log(`Listening on port ${server.address().port}`);
-
-  // (async function () {
-  //   const url = await ngrok.connect({
-  //     proto: "http", // http|tcp|tls
-  //     addr: PORT,
-  //     authtoken: process.env.NGROK_TOKEN,
-  //   });
-  //   console.log(url);
-  // })();
 });

@@ -64,25 +64,28 @@ function gameLoop(state) {
   playerTwo.position.x += playerTwo.velocity.x;
   playerTwo.position.y += playerTwo.velocity.y;
 
-  // // Checking if the player one is out of the grid
-  // if (
-  //   playerOne.position.x < 0 ||
-  //   playerOne.position.x > GRID_SIZE ||
-  //   playerOne.position.y < 0 ||
-  //   playerOne.position.y > GRID_SIZE
-  // ) {
-  //   return 2;
-  // }
+  /*
+  //* Logic for ending the game if the player is out of the grid
+  // Checking if the player one is out of the grid
+  if (
+    playerOne.position.x < 0 ||
+    playerOne.position.x > GRID_SIZE ||
+    playerOne.position.y < 0 ||
+    playerOne.position.y > GRID_SIZE
+  ) {
+    return 2;
+  }
 
-  // // Checking if the player two is out of the grid
-  // if (
-  //   playerTwo.position.x < 0 ||
-  //   playerTwo.position.x > GRID_SIZE ||
-  //   playerTwo.position.y < 0 ||
-  //   playerTwo.position.y > GRID_SIZE
-  // ) {
-  //   return 1;
-  // }
+  // Checking if the player two is out of the grid
+  if (
+    playerTwo.position.x < 0 ||
+    playerTwo.position.x > GRID_SIZE ||
+    playerTwo.position.y < 0 ||
+    playerTwo.position.y > GRID_SIZE
+  ) {
+    return 1;
+  }
+  */
 
   // Checking if the player one is out of the grid
   if (playerOne.position.x < 0) {
